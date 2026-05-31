@@ -12,6 +12,7 @@ import { requestLogger, errorLogger } from './middlewares/logger';
 import corsMiddleware from './middlewares/cors';
 import config from './config';
 import { ERROR_MESSAGES } from './constants/messages';
+import validateEnv from './utils/validate-env';
 
 const logger = winston.createLogger({
   level: 'info',
@@ -66,6 +67,7 @@ app.use((
 
 const startServer = async () => {
   try {
+    validateEnv();
     await mongoose.connect(config.dbAddress);
     logger.info('Connected to MongoDB');
 
@@ -73,7 +75,8 @@ const startServer = async () => {
       logger.info(`Server running on port ${config.port}`);
     });
   } catch (error) {
-    logger.error('Failed to connect to MongoDB:', error);
+    logger.error('Failed to start server:', error);
+    process.exit(1);
   }
 };
 
