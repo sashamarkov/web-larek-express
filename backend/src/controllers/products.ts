@@ -9,6 +9,8 @@ import NotFoundError from '../errors/not-found-error';
 import { AuthRequest } from '../middlewares/auth';
 import config from '../config';
 
+const DUPLICATE_KEY_ERROR = 'E11000';
+
 export const getProducts = async (
   _req: AuthRequest,
   res: Response,
@@ -72,8 +74,7 @@ export const createProduct = async (
     const product = await Product.create(productData);
     res.status(201).json(product);
   } catch (error) {
-    console.error('Create product error:', error);
-    if (error instanceof Error && error.message.includes('E11000')) {
+    if (error instanceof Error && error.message.includes(DUPLICATE_KEY_ERROR)) {
       next(new ConflictError('Товар с таким названием уже существует'));
       return;
     }

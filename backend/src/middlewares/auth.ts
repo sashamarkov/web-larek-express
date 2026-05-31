@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import UnauthorizedError from '../errors/unauthorized-error';
 import { verifyAccessToken } from '../utils/tokens';
+import { ERROR_MESSAGES } from '../constants/messages';
 
 export interface AuthRequest extends Request {
   userId?: string;
@@ -17,13 +18,13 @@ export default function auth(req: AuthRequest, _res: Response, next: NextFunctio
   }
 
   if (!token) {
-    next(new UnauthorizedError('Необходимо авторизоваться'));
+    next(new UnauthorizedError(ERROR_MESSAGES.UNAUTHORIZED_NEED_AUTH));
     return;
   }
 
   const userId = verifyAccessToken(token);
   if (!userId) {
-    next(new UnauthorizedError('Невалидный токен'));
+    next(new UnauthorizedError(ERROR_MESSAGES.INVALID_TOKEN));
     return;
   }
 

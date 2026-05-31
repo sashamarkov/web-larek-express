@@ -14,10 +14,10 @@ export interface IProduct extends Document {
 const productSchema = new Schema<IProduct>({
   title: {
     type: String,
-    required: [true, 'Поле "title" должно быть заполнено'],
+    required: [true, 'Поле title должно быть заполнено'],
     unique: true,
-    minlength: [2, 'Минимальная длина поля "title" - 2'],
-    maxlength: [30, 'Максимальная длина поля "title" - 30'],
+    minlength: [2, 'Минимальная длина поля title - 2'],
+    maxlength: [30, 'Максимальная длина поля title - 30'],
   },
   image: {
     fileName: { type: String, required: true },
@@ -25,7 +25,7 @@ const productSchema = new Schema<IProduct>({
   },
   category: {
     type: String,
-    required: [true, 'Поле "category" должно быть заполнено'],
+    required: [true, 'Поле category должно быть заполнено'],
   },
   description: {
     type: String,

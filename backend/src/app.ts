@@ -10,6 +10,7 @@ import router from './routes';
 import NotFoundError from './errors/not-found-error';
 import { requestLogger, errorLogger } from './middlewares/logger';
 import config from './config';
+import { ERROR_MESSAGES } from './constants/messages';
 
 const logger = winston.createLogger({
   level: 'info',
@@ -45,7 +46,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/', router);
 
 app.use((_req, _res, next) => {
-  next(new NotFoundError('Маршрут не найден'));
+  next(new NotFoundError(ERROR_MESSAGES.ROUTE_NOT_FOUND));
 });
 
 app.use(errors());
@@ -59,7 +60,7 @@ app.use((
 ) => {
   const statusCode = err.statusCode || 500;
   const message = statusCode === 500
-    ? 'На сервере произошла ошибка'
+    ? ERROR_MESSAGES.SERVER_ERROR
     : err.message;
 
   res.status(statusCode).json({ message });

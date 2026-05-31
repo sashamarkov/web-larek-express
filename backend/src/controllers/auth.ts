@@ -11,6 +11,7 @@ import {
   clearRefreshTokenCookie,
 } from '../utils/tokens';
 import { AuthRequest } from '../middlewares/auth';
+import { ERROR_MESSAGES } from '../constants/messages';
 
 export const register = async (
   req: AuthRequest,
@@ -21,7 +22,7 @@ export const register = async (
     const { email, password, name } = req.body;
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      next(new ConflictError('Пользователь с таким email уже существует'));
+      next(new ConflictError(ERROR_MESSAGES.USER_ALREADY_EXISTS));
       return;
     }
     const user = await User.create({ email, password, name });
@@ -37,7 +38,7 @@ export const register = async (
     });
   } catch (error) {
     if (error instanceof Error && error.name === 'ValidationError') {
-      next(new BadRequestError(error.message));
+      next(new BadRequestError(ERROR_MESSAGES.VALIDATION_ERROR));
       return;
     }
     next(error);
@@ -53,12 +54,12 @@ export const login = async (
     const { email, password } = req.body;
     const user = await User.findOne({ email }).select('+password +tokens');
     if (!user) {
-      next(new UnauthorizedError('Неверный email или пароль'));
+      next(new UnauthorizedError(ERROR_MESSAGES.INVALID_CREDENTIALS));
       return;
     }
     const isPasswordValid = await user.checkPassword(password);
     if (!isPasswordValid) {
-      next(new UnauthorizedError('Неверный email или пароль'));
+      next(new UnauthorizedError(ERROR_MESSAGES.INVALID_CREDENTIALS));
       return;
     }
     const { accessToken, refreshToken } = generateTokens(user._id);
@@ -84,22 +85,22 @@ export const refreshAccessToken = async (
   try {
     const refreshToken = req.cookies?.refreshToken;
     if (!refreshToken) {
-      next(new UnauthorizedError('Refresh token не предоставлен'));
+      next(new UnauthorizedError(ERROR_MESSAGES.REFRESH_TOKEN_NOT_PROVIDED));
       return;
     }
     const userId = verifyRefreshToken(refreshToken);
     if (!userId) {
-      next(new UnauthorizedError('Невалидный refresh token'));
+      next(new UnauthorizedError(ERROR_MESSAGES.REFRESH_TOKEN_INVALID));
       return;
     }
     const user = await User.findById(userId).select('+tokens');
     if (!user) {
-      next(new UnauthorizedError('Пользователь не найден'));
+      next(new UnauthorizedError(ERROR_MESSAGES.USER_NOT_FOUND));
       return;
     }
     const tokenExists = user.tokens.some((t) => t.token === refreshToken);
     if (!tokenExists) {
-      next(new UnauthorizedError('Refresh token не найден'));
+      next(new UnauthorizedError(ERROR_MESSAGES.REFRESH_TOKEN_NOT_FOUND));
       return;
     }
     const { accessToken, refreshToken: newRefreshToken } = generateTokens(user._id);
@@ -153,12 +154,12 @@ export const getCurrentUser = async (
 ): Promise<void> => {
   try {
     if (!req.userId) {
-      next(new UnauthorizedError('Необходима авторизация'));
+      next(new UnauthorizedError(ERROR_MESSAGES.UNAUTHORIZED_NEED_AUTH));
       return;
     }
     const user = await User.findById(req.userId);
     if (!user) {
-      next(new NotFoundError('Пользователь не найден'));
+      next(new NotFoundError(ERROR_MESSAGES.USER_NOT_FOUND));
       return;
     }
     res.json({

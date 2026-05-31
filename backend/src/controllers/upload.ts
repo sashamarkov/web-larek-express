@@ -1,5 +1,6 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middlewares/auth';
+import { ERROR_MESSAGES } from '../constants/messages';
 
 export default async function uploadFile(
   req: AuthRequest,
@@ -8,7 +9,7 @@ export default async function uploadFile(
 ): Promise<void> {
   try {
     if (!req.file) {
-      res.status(400).json({ message: 'Файл не загружен' });
+      res.status(400).json({ message: ERROR_MESSAGES.FILE_NOT_UPLOADED });
       return;
     }
     res.json({

@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import { Request } from 'express';
 import config from '../config';
+import { ERROR_MESSAGES } from '../constants/messages';
 
 const ensureDirectoryExists = (dirPath: string): void => {
   if (!fs.existsSync(dirPath)) {
@@ -58,7 +59,7 @@ const fileFilter = (
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Неподдерживаемый тип файла'));
+    cb(new Error(ERROR_MESSAGES.UNSUPPORTED_FILE_TYPE));
   }
 };
 
