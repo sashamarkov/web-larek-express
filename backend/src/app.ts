@@ -10,6 +10,7 @@ import router from './routes';
 import NotFoundError from './errors/not-found-error';
 import { requestLogger, errorLogger } from './middlewares/logger';
 import corsMiddleware from './middlewares/cors';
+import rateLimiter from './middlewares/rate-limiter';
 import config from './config';
 import { ERROR_MESSAGES } from './constants/messages';
 import validateEnv from './utils/validate-env';
@@ -40,6 +41,7 @@ app.use(helmet());
 app.use(corsMiddleware);
 app.use(cookieParser());
 app.use(express.json());
+app.use(rateLimiter);
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', router);
