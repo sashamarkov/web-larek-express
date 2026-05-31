@@ -13,8 +13,8 @@ const router = Router();
 
 router.get('/', getProducts);
 router.get('/:productId', getProductById);
-router.post('/', /* authMiddleware, */ validateCreateProduct, createProduct);
-router.patch('/:productId', /* authMiddleware, */ validateUpdateProduct, updateProduct);
-router.delete('/:productId', /* authMiddleware, */ deleteProduct);
+router.post('/', authMiddleware, validateCreateProduct, createProduct);
+router.patch('/:productId', authMiddleware, validateUpdateProduct, updateProduct);
+router.delete('/:productId', authMiddleware, deleteProduct);
 
 export default router;
