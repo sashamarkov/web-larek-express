@@ -1,15 +1,24 @@
 import { Response, NextFunction } from 'express';
-import { Error as MongooseError } from 'mongoose';
 import fs from 'fs';
 import path from 'path';
 import Product from '../models/product';
-import BadRequestError from '../errors/bad-request-error';
-import ConflictError from '../errors/conflict-error';
-import NotFoundError from '../errors/not-found-error';
 import { AuthRequest } from '../middlewares/auth';
 import config from '../config';
+import { ERROR_MESSAGES } from '../constants/messages';
+import { handleMongooseError, handleNotFoundError } from '../utils/error-handler';
 
-const DUPLICATE_KEY_ERROR = 'E11000';
+const moveFileFromTempToPublic = (fileName: string): void => {
+  const tempPath = path.join(config.tempUploadDir as string, fileName);
+  const publicPath = path.join(config.publicUploadDir as string, fileName);
+  const publicDir = config.publicUploadDir as string;
+  if (!fs.existsSync(publicDir)) {
+    fs.mkdirSync(publicDir, { recursive: true });
+  }
+  if (fs.existsSync(tempPath)) {
+    fs.copyFileSync(tempPath, publicPath);
+    fs.unlinkSync(tempPath);
+  }
+};
 
 export const getProducts = async (
   _req: AuthRequest,
@@ -32,30 +41,15 @@ export const getProductById = async (
   try {
     const { productId } = req.params;
     const product = await Product.findById(productId);
-    if (!product) {
-      next(new NotFoundError('Товар не найден'));
-      return;
-    }
+    handleNotFoundError(product, ERROR_MESSAGES.PRODUCT_NOT_FOUND);
     res.json(product);
   } catch (error) {
-    if (error instanceof Error && error.name === 'CastError') {
-      next(new BadRequestError('Невалидный ID товара'));
+    const mongooseError = handleMongooseError(error);
+    if (mongooseError) {
+      next(mongooseError);
       return;
     }
     next(error);
-  }
-};
-
-const moveFileFromTempToPublic = (fileName: string): void => {
-  const tempPath = path.join(config.tempUploadDir as string, fileName);
-  const publicPath = path.join(config.publicUploadDir as string, fileName);
-  const publicDir = config.publicUploadDir as string;
-  if (!fs.existsSync(publicDir)) {
-    fs.mkdirSync(publicDir, { recursive: true });
-  }
-  if (fs.existsSync(tempPath)) {
-    fs.copyFileSync(tempPath, publicPath);
-    fs.unlinkSync(tempPath);
   }
 };
 
@@ -74,12 +68,9 @@ export const createProduct = async (
     const product = await Product.create(productData);
     res.status(201).json(product);
   } catch (error) {
-    if (error instanceof Error && error.message.includes(DUPLICATE_KEY_ERROR)) {
-      next(new ConflictError('Товар с таким названием уже существует'));
-      return;
-    }
-    if (error instanceof MongooseError.ValidationError) {
-      next(new BadRequestError(error.message));
+    const mongooseError = handleMongooseError(error);
+    if (mongooseError) {
+      next(mongooseError);
       return;
     }
     next(error);
@@ -104,22 +95,12 @@ export const updateProduct = async (
       updateData,
       { new: true, runValidators: true },
     );
-    if (!product) {
-      next(new NotFoundError('Товар не найден'));
-      return;
-    }
+    handleNotFoundError(product, ERROR_MESSAGES.PRODUCT_NOT_FOUND);
     res.json(product);
   } catch (error) {
-    if (error instanceof Error && error.message.includes('E11000')) {
-      next(new ConflictError('Товар с таким названием уже существует'));
-      return;
-    }
-    if (error instanceof Error && error.name === 'CastError') {
-      next(new BadRequestError('Невалидный ID товара'));
-      return;
-    }
-    if (error instanceof MongooseError.ValidationError) {
-      next(new BadRequestError(error.message));
+    const mongooseError = handleMongooseError(error);
+    if (mongooseError) {
+      next(mongooseError);
       return;
     }
     next(error);
@@ -134,14 +115,12 @@ export const deleteProduct = async (
   try {
     const { productId } = req.params;
     const product = await Product.findByIdAndDelete(productId);
-    if (!product) {
-      next(new NotFoundError('Товар не найден'));
-      return;
-    }
+    handleNotFoundError(product, ERROR_MESSAGES.PRODUCT_NOT_FOUND);
     res.json(product);
   } catch (error) {
-    if (error instanceof Error && error.name === 'CastError') {
-      next(new BadRequestError('Невалидный ID товара'));
+    const mongooseError = handleMongooseError(error);
+    if (mongooseError) {
+      next(mongooseError);
       return;
     }
     next(error);

@@ -1,14 +1,15 @@
 /* eslint-disable import/no-extraneous-dependencies */
 import express from 'express';
 import mongoose from 'mongoose';
-import cors from 'cors';
 import path from 'path';
 import cookieParser from 'cookie-parser';
 import { errors } from 'celebrate';
 import winston from 'winston';
+import helmet from 'helmet';
 import router from './routes';
 import NotFoundError from './errors/not-found-error';
 import { requestLogger, errorLogger } from './middlewares/logger';
+import corsMiddleware from './middlewares/cors';
 import config from './config';
 import { ERROR_MESSAGES } from './constants/messages';
 
@@ -34,11 +35,8 @@ interface IError extends Error {
 const app = express();
 
 app.use(requestLogger);
-
-app.use(cors({
-  origin: config.originAllow,
-  credentials: true,
-}));
+app.use(helmet());
+app.use(corsMiddleware);
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
