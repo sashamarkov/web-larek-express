@@ -9,8 +9,21 @@ export const validateCreateProduct = celebrate({
       originalName: Joi.string().required(),
     }).required(),
     category: Joi.string().required(),
-    description: Joi.string().optional(),
+    description: Joi.string().optional().allow(''),
     price: Joi.number().allow(null).default(null),
+  }),
+});
+
+export const validateUpdateProduct = celebrate({
+  [Segments.BODY]: Joi.object().keys({
+    title: Joi.string().min(2).max(30).optional(),
+    image: Joi.object({
+      fileName: Joi.string().required(),
+      originalName: Joi.string().required(),
+    }).optional(),
+    category: Joi.string().optional(),
+    description: Joi.string().optional().allow(''),
+    price: Joi.number().allow(null).optional(),
   }),
 });
 
