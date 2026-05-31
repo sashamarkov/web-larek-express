@@ -4,14 +4,9 @@ import BadRequestError from '../errors/bad-request-error';
 import ConflictError from '../errors/conflict-error';
 import UnauthorizedError from '../errors/unauthorized-error';
 import NotFoundError from '../errors/not-found-error';
-import {
-  generateTokens,
-  verifyRefreshToken,
-  setRefreshTokenCookie,
-  clearRefreshTokenCookie,
-} from '../utils/tokens';
 import { AuthRequest } from '../middlewares/auth';
 import { ERROR_MESSAGES } from '../constants/messages';
+import TokenService from '../services/token.service';
 
 export const register = async (
   req: AuthRequest,
@@ -26,10 +21,10 @@ export const register = async (
       return;
     }
     const user = await User.create({ email, password, name });
-    const { accessToken, refreshToken } = generateTokens(user._id);
+    const { accessToken, refreshToken } = TokenService.generateTokens(user._id);
     user.tokens.push({ token: refreshToken });
     await user.save();
-    setRefreshTokenCookie(res, refreshToken);
+    TokenService.setRefreshTokenCookie(res, refreshToken);
     res.status(201).json({
       success: true,
       user: { email: user.email, name: user.name },
@@ -62,10 +57,10 @@ export const login = async (
       next(new UnauthorizedError(ERROR_MESSAGES.INVALID_CREDENTIALS));
       return;
     }
-    const { accessToken, refreshToken } = generateTokens(user._id);
+    const { accessToken, refreshToken } = TokenService.generateTokens(user._id);
     user.tokens.push({ token: refreshToken });
     await user.save();
-    setRefreshTokenCookie(res, refreshToken);
+    TokenService.setRefreshTokenCookie(res, refreshToken);
     res.json({
       success: true,
       user: { email: user.email, name: user.name },
@@ -88,7 +83,7 @@ export const refreshAccessToken = async (
       next(new UnauthorizedError(ERROR_MESSAGES.REFRESH_TOKEN_NOT_PROVIDED));
       return;
     }
-    const userId = verifyRefreshToken(refreshToken);
+    const userId = TokenService.verifyRefreshToken(refreshToken);
     if (!userId) {
       next(new UnauthorizedError(ERROR_MESSAGES.REFRESH_TOKEN_INVALID));
       return;
@@ -103,11 +98,11 @@ export const refreshAccessToken = async (
       next(new UnauthorizedError(ERROR_MESSAGES.REFRESH_TOKEN_NOT_FOUND));
       return;
     }
-    const { accessToken, refreshToken: newRefreshToken } = generateTokens(user._id);
+    const { accessToken, refreshToken: newRefreshToken } = TokenService.generateTokens(user._id);
     user.tokens = user.tokens.filter((t) => t.token !== refreshToken);
     user.tokens.push({ token: newRefreshToken });
     await user.save();
-    setRefreshTokenCookie(res, newRefreshToken);
+    TokenService.setRefreshTokenCookie(res, newRefreshToken);
     res.json({
       success: true,
       user: { email: user.email, name: user.name },
@@ -127,11 +122,11 @@ export const logout = async (
   try {
     const refreshToken = req.cookies?.refreshToken;
     if (!refreshToken) {
-      clearRefreshTokenCookie(res);
+      TokenService.clearRefreshTokenCookie(res);
       res.json({ success: true });
       return;
     }
-    const userId = verifyRefreshToken(refreshToken);
+    const userId = TokenService.verifyRefreshToken(refreshToken);
     if (userId) {
       const user = await User.findById(userId).select('+tokens');
       if (user) {
@@ -139,10 +134,10 @@ export const logout = async (
         await user.save();
       }
     }
-    clearRefreshTokenCookie(res);
+    TokenService.clearRefreshTokenCookie(res);
     res.json({ success: true });
   } catch (error) {
-    clearRefreshTokenCookie(res);
+    TokenService.clearRefreshTokenCookie(res);
     res.json({ success: true });
   }
 };
