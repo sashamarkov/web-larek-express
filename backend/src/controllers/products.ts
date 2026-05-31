@@ -1,24 +1,10 @@
 import { Response, NextFunction } from 'express';
-import fs from 'fs';
-import path from 'path';
 import Product from '../models/product';
+import NotFoundError from '../errors/not-found-error';
 import { AuthRequest } from '../middlewares/auth';
-import config from '../config';
 import { ERROR_MESSAGES } from '../constants/messages';
-import { handleMongooseError, handleNotFoundError } from '../utils/error-handler';
-
-const moveFileFromTempToPublic = (fileName: string): void => {
-  const tempPath = path.join(config.tempUploadDir as string, fileName);
-  const publicPath = path.join(config.publicUploadDir as string, fileName);
-  const publicDir = config.publicUploadDir as string;
-  if (!fs.existsSync(publicDir)) {
-    fs.mkdirSync(publicDir, { recursive: true });
-  }
-  if (fs.existsSync(tempPath)) {
-    fs.copyFileSync(tempPath, publicPath);
-    fs.unlinkSync(tempPath);
-  }
-};
+import { moveFileFromTempToPublic } from '../services/file.service';
+import { handleMongooseError } from '../utils/error-handler';
 
 export const getProducts = async (
   _req: AuthRequest,
@@ -41,7 +27,10 @@ export const getProductById = async (
   try {
     const { productId } = req.params;
     const product = await Product.findById(productId);
-    handleNotFoundError(product, ERROR_MESSAGES.PRODUCT_NOT_FOUND);
+    if (!product) {
+      next(new NotFoundError(ERROR_MESSAGES.PRODUCT_NOT_FOUND));
+      return;
+    }
     res.json(product);
   } catch (error) {
     const mongooseError = handleMongooseError(error);
@@ -61,9 +50,9 @@ export const createProduct = async (
   try {
     const productData = req.body;
     if (productData.image && productData.image.fileName) {
-      const fileName = path.basename(productData.image.fileName);
-      moveFileFromTempToPublic(fileName);
-      productData.image.fileName = `/images/${fileName}`;
+      const fileName = productData.image.fileName.split('/').pop();
+      const publicPath = moveFileFromTempToPublic(fileName);
+      productData.image.fileName = publicPath;
     }
     const product = await Product.create(productData);
     res.status(201).json(product);
@@ -86,16 +75,19 @@ export const updateProduct = async (
     const { productId } = req.params;
     const updateData = req.body;
     if (updateData.image && updateData.image.fileName) {
-      const fileName = path.basename(updateData.image.fileName);
-      moveFileFromTempToPublic(fileName);
-      updateData.image.fileName = `/images/${fileName}`;
+      const fileName = updateData.image.fileName.split('/').pop();
+      const publicPath = moveFileFromTempToPublic(fileName);
+      updateData.image.fileName = publicPath;
     }
     const product = await Product.findByIdAndUpdate(
       productId,
       updateData,
       { new: true, runValidators: true },
     );
-    handleNotFoundError(product, ERROR_MESSAGES.PRODUCT_NOT_FOUND);
+    if (!product) {
+      next(new NotFoundError(ERROR_MESSAGES.PRODUCT_NOT_FOUND));
+      return;
+    }
     res.json(product);
   } catch (error) {
     const mongooseError = handleMongooseError(error);
@@ -115,7 +107,10 @@ export const deleteProduct = async (
   try {
     const { productId } = req.params;
     const product = await Product.findByIdAndDelete(productId);
-    handleNotFoundError(product, ERROR_MESSAGES.PRODUCT_NOT_FOUND);
+    if (!product) {
+      next(new NotFoundError(ERROR_MESSAGES.PRODUCT_NOT_FOUND));
+      return;
+    }
     res.json(product);
   } catch (error) {
     const mongooseError = handleMongooseError(error);

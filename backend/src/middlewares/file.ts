@@ -1,15 +1,8 @@
 import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
 import { Request } from 'express';
 import config from '../config';
 import { ERROR_MESSAGES } from '../constants/messages';
-
-const ensureDirectoryExists = (dirPath: string): void => {
-  if (!fs.existsSync(dirPath)) {
-    fs.mkdirSync(dirPath, { recursive: true });
-  }
-};
+import { generateUniqueFilename, ensureDirectoryExists } from '../services/file.service';
 
 interface MulterFile {
   fieldname: string;
@@ -38,9 +31,8 @@ const storage = multer.diskStorage({
     file: MulterFile,
     cb: (error: Error | null, filename: string) => void,
   ) => {
-    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-    const ext = path.extname(file.originalname);
-    cb(null, uniqueSuffix + ext);
+    const uniqueFilename = generateUniqueFilename(file.originalname);
+    cb(null, uniqueFilename);
   },
 });
 
