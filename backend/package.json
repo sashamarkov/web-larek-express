@@ -22,6 +22,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.1.0",
     "@types/node": "^20.12.7",
+    "@types/validator": "^13.15.10",
     "@typescript-eslint/eslint-plugin": "^7.7.1",
     "@typescript-eslint/parser": "^7.7.1",
     "eslint": "^8.56.0",
@@ -43,6 +44,7 @@
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^8.3.2",
     "multer": "^2.1.1",
+    "validator": "^13.15.35",
     "winston": "^3.13.0"
   }
 }
