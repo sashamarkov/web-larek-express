@@ -24,13 +24,20 @@ export const register = async (
     const { accessToken, refreshToken } = TokenService.generateTokens(user._id);
     user.tokens.push({ token: refreshToken });
     await user.save();
-    TokenService.setRefreshTokenCookie(res, refreshToken);
-    res.status(201).json({
-      success: true,
-      user: { email: user.email, name: user.name },
-      accessToken,
-      refreshToken,
-    });
+    res
+      .status(201)
+      .cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        path: '/',
+      })
+      .json({
+        success: true,
+        user: { email: user.email, name: user.name },
+        accessToken,
+      });
   } catch (error) {
     if (error instanceof Error && error.name === 'ValidationError') {
       next(new BadRequestError(ERROR_MESSAGES.VALIDATION_ERROR));
@@ -60,13 +67,19 @@ export const login = async (
     const { accessToken, refreshToken } = TokenService.generateTokens(user._id);
     user.tokens.push({ token: refreshToken });
     await user.save();
-    TokenService.setRefreshTokenCookie(res, refreshToken);
-    res.json({
-      success: true,
-      user: { email: user.email, name: user.name },
-      accessToken,
-      refreshToken,
-    });
+    res
+      .cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        path: '/',
+      })
+      .json({
+        success: true,
+        user: { email: user.email, name: user.name },
+        accessToken,
+      });
   } catch (error) {
     next(error);
   }
@@ -102,13 +115,19 @@ export const refreshAccessToken = async (
     user.tokens = user.tokens.filter((t) => t.token !== refreshToken);
     user.tokens.push({ token: newRefreshToken });
     await user.save();
-    TokenService.setRefreshTokenCookie(res, newRefreshToken);
-    res.json({
-      success: true,
-      user: { email: user.email, name: user.name },
-      accessToken,
-      refreshToken: newRefreshToken,
-    });
+    res
+      .cookie('refreshToken', newRefreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+        path: '/',
+      })
+      .json({
+        success: true,
+        user: { email: user.email, name: user.name },
+        accessToken,
+      });
   } catch (error) {
     next(error);
   }
@@ -122,7 +141,7 @@ export const logout = async (
   try {
     const refreshToken = req.cookies?.refreshToken;
     if (!refreshToken) {
-      TokenService.clearRefreshTokenCookie(res);
+      res.clearCookie('refreshToken', { path: '/' });
       res.json({ success: true });
       return;
     }
@@ -134,10 +153,10 @@ export const logout = async (
         await user.save();
       }
     }
-    TokenService.clearRefreshTokenCookie(res);
+    res.clearCookie('refreshToken', { path: '/' });
     res.json({ success: true });
   } catch (error) {
-    TokenService.clearRefreshTokenCookie(res);
+    res.clearCookie('refreshToken', { path: '/' });
     res.json({ success: true });
   }
 };

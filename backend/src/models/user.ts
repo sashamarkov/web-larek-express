@@ -1,5 +1,7 @@
+/* eslint-disable import/no-extraneous-dependencies */
 import mongoose, { Schema, Document } from 'mongoose';
 import bcrypt from 'bcryptjs';
+import validator from 'validator';
 
 export interface IUser extends Document {
   name: string;
@@ -26,19 +28,23 @@ function checkPasswordFunction(this: IUser, password: string): Promise<boolean> 
 const userSchema = new Schema<IUser>({
   name: {
     type: String,
-    default: 'Ё-мое',
-    minlength: [2, 'Минимальная длина поля name - 2'],
-    maxlength: [30, 'Максимальная длина поля name - 30'],
+    default: 'É-moe',
+    minlength: [2, 'Минимальная длина поля "name" - 2'],
+    maxlength: [30, 'Максимальная длина поля "name" - 30'],
   },
   email: {
     type: String,
-    required: [true, 'Поле email должно быть заполнено'],
+    required: [true, 'Поле "email" должно быть заполнено'],
     unique: true,
+    validate: {
+      validator: (v: string) => validator.isEmail(v),
+      message: 'Некорректный формат email',
+    },
   },
   password: {
     type: String,
-    required: [true, 'Поле password должно быть заполнено'],
-    minlength: [6, 'Минимальная длина поля password - 6'],
+    required: [true, 'Поле "password" должно быть заполнено'],
+    minlength: [6, 'Минимальная длина поля "password" - 6'],
     select: false,
   },
   tokens: {
